@@ -1,0 +1,53 @@
+{{- range .Values.container }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }} 
+spec:
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: {{ .name }}
+        image: {{ .image }}
+        imagePullPolicy: {{ .pullPolicy }}
+        env:
+        {{- range $envname , $envvalue := .environments }}
+        - name: {{ $envname }}
+          value: {{ $envvalue }}
+        {{- end }}
+        volumeMounts:
+        {{- range $volumename, $mountpath := .volume }}
+        - name: {{ $volumename }} 
+          mountPath: {{ $mountpath }}
+        {{- end }}
+        resources:
+          requests:
+            cpu: {{ .resources.requests.cpu }}
+            memory: {{ .resources.requests.memory }}
+      volumes:
+        {{- range $volumename , $mountpath := .volume }}
+        - name: {{ $volumename }}           
+          claimName: {{ $volumename }}{{ $.name }}
+        {{- end }}
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          effect: NoExecute
+          tolerationSeconds: 0
+        - key: node.kubernetes.io/unreachable
+          effect: NoExecute
+          tolerationSeconds: 0
+
+{{- end }}

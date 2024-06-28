@@ -1,0 +1,14 @@
+{{- if .Values.sonarqube.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.sonarqube.env.name }}
+  namespace: {{ .Values.sonarqube.namespace }} 
+data:
+{{- if .Values.sonarqube.env.value}} 
+  {{ .Values.sonarqube.env.path }}: |
+    {{- range $envname, $envvalue := .Values.sonarqube.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 

@@ -1,0 +1,24 @@
+{{- if .Values.sonarqube.ingress.domain.name }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.sonarqube.ingress.domain.name }}
+  namespace: {{ .Values.sonarqube.namespace }} 
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.sonarqube.ingress.domain.host }}
+      secretName: #enter your tls secret here
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.sonarqube.ingress.domain.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.sonarqube.ingress.domain.service }}
+                port:
+                  number: {{ .Values.sonarqube.ingress.domain.port }}
+{{- end}}

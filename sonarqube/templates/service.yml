@@ -1,0 +1,43 @@
+{{- $namespace := .Values.sonarqube.namespace }}
+{{- $labels := .Values.sonarqube.labels }}
+{{- range $name,$config := .Values.sonarqube.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}
+  namespace: {{ $namespace }}
+spec:
+  selector:
+    {{- range $k1, $v1 := $labels }}
+      {{ $k1}}: {{ $v1 }}
+    {{- end }}
+  type: {{ $config.type }}
+  ports:
+  - name: {{ $config.name  }} 
+    port: {{ $config.port }}
+    targetPort: {{ $config.port }}
+    protocol: TCP
+---
+{{- end }}
+---
+{{- $namespace := .Values.postgresql.namespace }}
+{{- $labels := .Values.postgresql.labels }}
+{{- range $name,$config := .Values.postgresql.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}
+  namespace: {{ $namespace }}
+spec:
+  selector:
+    {{- range $k1, $v1 := $labels }}
+      {{ $k1}}: {{ $v1 }}
+    {{- end }}
+  type: {{ $config.type }}
+  ports:
+  - name: {{ $config.name  }} 
+    port: {{ $config.port }}
+    targetPort: {{ $config.port }}
+    protocol: TCP
+---
+{{- end }}

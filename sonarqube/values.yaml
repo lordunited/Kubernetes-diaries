@@ -1,0 +1,111 @@
+sonarqube: 
+  affinity: 
+    enabled: false
+  toleration: {} #your toleration 
+  name: sonarqube
+  image: registry.docker.ir/sonarqube:9.9.3-community
+  labels:
+    app: sonarqube
+  namespace: sonarqube 
+  environments:
+    TZ: "Asia/Tehran" #its a neccessary env , dont ommit it
+    POSTGRES_USER: sonar
+  security:
+    enabled: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
+    runAsGroup: 1001
+    capabilities:
+      drop: 
+        - ALL
+      allow:
+        - NET_BIND_SERVICE
+        - SYS_NICE
+        - SETUID
+        - SETGID
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "128Mi"
+    limits:
+      cpu: "2" 
+      memory: "4048Mi" 
+  storageclass: #your storageclassname
+  env: {}
+  volumes:  #open template/pvc and add a section for each of volume definition below.
+    sonarqube-data-volume: 
+      mountpath: /opt/sonarqube/data
+      storage: 5Gi
+    sonarqube-extensions-volume: 
+      mountpath: /opt/sonarqube/extensions
+      storage: 5Gi
+    sonarqube-logs-volume: 
+      mountpath: /opt/sonarqube/logs
+      storage: 5Gi
+  services: #you have to add your second config in template/service.yml
+    sonarqube:
+      name: sonarqube
+      type: ClusterIP
+      port: "9000"
+      targetport: 9000
+  ingress: 
+    domain:
+      name: sonar
+      service: sonarqube
+      port: 9000
+      host: sonar.cluster.local
+postgresql:
+  affinity: 
+    enabled: false
+  security:
+    enabled: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
+    runAsGroup: 1001
+    capabilities:
+      drop: 
+        - ALL
+      allow:
+        - NET_BIND_SERVICE
+        - SYS_NICE
+        - SETUID
+        - SETGID
+  toleration: {}  #your toleration
+  name: sonar-postgres
+  image: registry.docker.ir/postgres:15
+  labels:
+    app: sonar-postgres
+  namespace: sonarqube 
+  environments:
+    TZ: "Asia/Tehran" #its a neccessary env , dont ommit it
+    POSTGRES_USER: sonar
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "128Mi"
+    limits:
+      cpu: "2" 
+      memory: "4048Mi" 
+  storageclass: #your storageclass name
+  env: {} 
+  volumes:  #open template/pvc and add a section for each of volume definition below.
+    sonar-database-data-volume: 
+      mountpath: /var/lib/postgresql/data
+      storage: 5Gi
+      subPath: data
+  services: #you have to add your second config in template/service.yml
+    postgresql:
+      name: sonar-postgres
+      type: ClusterIP
+      port: "5432"
+      targetport: 5432
+  ingress: 
+    domain:
+     name: {}
+     service: {}
+     port: {}
+     host: {}

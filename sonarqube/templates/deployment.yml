@@ -1,0 +1,252 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.postgresql.name }}
+  namespace: {{ .Values.postgresql.namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.postgresql.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.postgresql.replicaCount }}
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.postgresql.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:      
+      {{- if .Values.postgresql.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.postgresql.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.postgresql.affinity.team }}         
+      {{- end }}
+      containers:   
+      - name: {{ .Values.postgresql.name }}
+        image: {{ .Values.postgresql.image }}
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.postgresql.environments }}
+        env: 
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+             secretKeyRef:
+               name: postgres-pwd
+               key: password
+        {{- range $envname , $envvalue := .Values.postgresql.environments }}
+        - name: {{ $envname }}
+          value: {{ $envvalue }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.postgresql.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.postgresql.security.allowPrivilegeEscalation | default false }}
+          readOnlyRootFilesystem: {{ .Values.postgresql.security.readOnlyRootFilesystem | default true }}
+          runAsUser: {{ .Values.postgresql.security.runAsUser | default 1000 }}
+          runAsGroup: {{  .Values.postgresql.security.runAsGroup | default 1000 }}
+          capabilities:
+            drop:
+              {{- range  .Values.postgresql.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.postgresql.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.postgresql.volumes }}
+        {{- range $volumename, $mountpath := .Values.postgresql.volumes }}
+        - name: {{ $volumename }}
+          mountPath: {{ $mountpath.mountpath }}
+        {{- if $mountpath.subPath }}
+          subPath: {{ $mountpath.subPath }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.postgresql.env }}
+        - name: {{ .Values.postgresql.env.name }}
+          mountPath: {{ .Values.postgresql.env.path }}
+        {{- end }}
+        resources:
+          requests:
+            cpu: {{ .Values.postgresql.resources.requests.cpu }}
+            memory: {{ .Values.postgresql.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.postgresql.resources.limits.cpu }}
+            memory: {{ .Values.postgresql.resources.limits.memory }}
+
+      {{- if .Values.postgresql.volumes }}
+      volumes:
+        {{- if .Values.postgresql.volumes }}
+        {{- range $volumename , $mountpath := .Values.postgresql.volumes }}
+        - name: {{ $volumename }}
+          persistentVolumeClaim:
+            claimName: {{ $volumename }}
+        {{- end }}
+        {{- end }}
+        - name: sonar-config
+          configMap:
+            name: sonar-config
+        {{- if .Values.postgresql.env }}
+        - name: {{ .Values.postgresql.env.name }}
+          configMap:
+            name: {{ .Values.postgresql.env.name }}
+        {{- end }}
+        {{- end }}
+      {{- if .Values.postgresql.toleration }}
+      tolerations:
+      - effect: NoSchedule
+        key: {{ .Values.postgresql.toleration }}
+        operator: Equal
+        value: enabled
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.sonarqube.name }}
+  namespace: {{ .Values.sonarqube.namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.sonarqube.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.sonarqube.replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.sonarqube.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      {{- if .Values.sonarqube.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.sonarqube.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.sonarqube.affinity.team }}         
+      {{- end }}
+      securityContext:
+          fsGroup: 1000
+      initContainers:
+        - name: sysctl-max
+          image: registry.docker.ir/busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command: [ 'sysctl', '-w', 'vm.max_map_count=262144' ]
+          securityContext:
+            privileged: true
+        - name: sysctl-fs
+          image: registry.docker.ir/busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command: [ 'sysctl', '-w', 'fs.file-max=131072' ]
+          securityContext:
+            privileged: true
+      containers:
+      - name: {{ .Values.sonarqube.name }}
+        image: {{ .Values.sonarqube.image }}
+        args: ["sysctl vm.max_map_count"]
+        args: [ "-Dsonar.ce.javaOpts=-Xmx1192m", "-Dsonar.web.javaOpts=-Xmx1192m" ]
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.sonarqube.environments }}
+        env:
+        {{- range $envname , $envvalue := .Values.sonarqube.environments }}
+        - name: {{ $envname }}
+          value: {{ $envvalue }}
+        {{- end }}
+        {{- end}}
+        {{- if .Values.sonarqube.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.sonarqube.security.allowPrivilegeEscalation  }}
+          readOnlyRootFilesystem: {{ .Values.sonarqube.security.readOnlyRootFilesystem }}
+          runAsUser: {{ .Values.sonarqube.security.runAsUser }}
+          runAsGroup: {{  .Values.sonarqube.security.runAsGroup }}
+          capabilities:
+            drop:
+              {{- range  .Values.sonarqube.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.sonarqube.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+
+        {{- if .Values.sonarqube.volumes }}
+        volumeMounts:
+        {{- if .Values.sonarqube.environments }}
+        {{- range $volumename, $mountpath := .Values.sonarqube.volumes }}
+        - name: {{ $volumename }}
+          mountPath: {{ $mountpath.mountpath }}
+        {{- if $mountpath.subPath }}
+          subPath: {{ $mountpath.subPath }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.sonarqube.env}}
+        - name: {{ .Values.sonarqube.env.name }}
+          mountPath: {{ .Values.sonarqube.env.path }} 
+        {{- end }}
+        - name: sonar-config
+          mountPath: /opt/sonarqube/conf/sonar.properties
+          subPath: sonar.properties
+        {{- end }}
+        resources:
+          requests:
+            cpu: {{ .Values.sonarqube.resources.requests.cpu }}
+            memory: {{ .Values.sonarqube.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.sonarqube.resources.limits.cpu }}
+            memory: {{ .Values.sonarqube.resources.limits.memory }}
+      {{- if .Values.sonarqube.volumes }}
+      volumes:
+        {{- if .Values.sonarqube.volumes }}
+        {{- range $volumename , $mountpath := .Values.sonarqube.volumes }}
+        - name: {{ $volumename }}
+          persistentVolumeClaim:          
+            claimName: {{ $volumename }}
+        {{- end }}
+        {{- end }}
+        - name: sonar-config
+          configMap: 
+            name: sonar-config
+        {{- if .Values.sonarqube.env }}
+        - name: {{ .Values.sonarqube.env.name }}          
+          configMap:
+            name: {{ .Values.sonarqube.env.name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.sonarqube.toleration }}
+      tolerations:
+      - effect: NoSchedule
+        key: {{ .Values.sonarqube.toleration }}
+        operator: Equal
+        value: enabled
+      {{- end }}

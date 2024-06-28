@@ -1,0 +1,43 @@
+container:
+- name: frontend
+  image: registry.docker.ir/nginx:latest
+  volumes: 
+    - name: config
+      path: /usr/share/nginx/conf.d/default.conf
+    - name: html
+      path: /usr/share/nginx/conf.d/default.conf
+  volume: 
+    config: /usr/share/nginx/conf.d/default.conf   
+    html: /usr/share/nginx/conf.d/default.conf
+  pullPolicy: IfNotPresent
+  labels:
+    app: nginx
+  namespace: default
+  environments:
+    TZ: "Asia/Tehran"
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "128Mi"
+- name: backend
+  image: registry.docker.ir/nginx:latest
+  volumes: 
+    - name: .env
+      path: /usr/share/nginx/conf.d/default.conf
+    - name: .app.properties
+      path: /usr/share/nginx/html/.app.properties
+  volume: 
+    .env: /usr/share/nginx/conf.d/default.conf   
+    .app.properties: /usr/share/nginx/html/.app.properties
+  pullPolicy: IfNotPresent
+  labels:
+    app: web
+  namespace: default
+  environments:
+    TZ: "Asia/Tehran"
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "128Mi"

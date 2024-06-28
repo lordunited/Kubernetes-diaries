@@ -1,0 +1,15 @@
+{{- range .Values.container }} 
+---
+apiversion: v1
+kind: persistentvolumeclaim
+metadata:
+  name: {{ index .volumes 0  "name" }}-{{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  accessmodes:
+    - readwritemany
+  storageclassname: longhorn
+  resources:
+    requests:
+      storage: 15gi
+  {{- end }}

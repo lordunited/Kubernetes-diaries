@@ -1,0 +1,33 @@
+{{- $namespace := .Values.sonarqube.namespace }}
+{{- range $name,$config := .Values.sonarqube.volumes }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec: 
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-main
+  resources:
+    requests:
+      storage: {{ $config.storage }}
+---
+{{- end }}
+---
+{{- $namespace := .Values.postgresql.namespace }}
+{{- range $name,$config := .Values.postgresql.volumes }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec: 
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-main
+  resources:
+    requests:
+      storage: {{ $config.storage }}
+---
+{{- end }}
