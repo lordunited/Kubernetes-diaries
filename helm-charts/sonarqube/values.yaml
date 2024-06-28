@@ -9,7 +9,7 @@ sonarqube:
   namespace: sonarqube 
   environments:
     TZ: "Asia/Tehran" #its a neccessary env , dont ommit it
-    POSTGRES_USER: sonar
+    POSTGRES_USER: admin
   security:
     enabled: false
     allowPrivilegeEscalation: false
