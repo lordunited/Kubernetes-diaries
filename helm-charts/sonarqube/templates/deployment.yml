@@ -48,8 +48,8 @@ spec:
                name: postgres-pwd
                key: password
         {{- range $envname , $envvalue := .Values.postgresql.environments }}
-        - name: {{ $envname }}
-          value: {{ $envvalue }}
+        - name: {{ $envname | toYaml }}
+          value: {{ $envvalue | toYaml }}
         {{- end }}
         {{- end }}
         {{- if .Values.postgresql.security.enabled }}
@@ -178,8 +178,8 @@ spec:
         {{- if .Values.sonarqube.environments }}
         env:
         {{- range $envname , $envvalue := .Values.sonarqube.environments }}
-        - name: {{ $envname }}
-          value: {{ $envvalue }}
+        - name: {{ $envname | toYaml }}
+          value: {{ $envvalue | toYaml }}
         {{- end }}
         {{- end}}
         {{- if .Values.sonarqube.security.enabled }}
