@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.keycloak.name }}
+  namespace: {{ .Values.keycloak.namespace }}
+spec:
+  {{ if .Values.keycloak.strategy.enabled }} 
+  strategy: 
+    type: {{ .Values.keycloak.strategy.type }}
+    rollingUpdate: 
+      maxSurge: {{ .Values.keycloak.strategy.maxsurge }}
+      maxUnavailable: {{ .Values.keycloak.strategy.maxunavailble }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.keycloak.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.keycloak.replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.keycloak.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      {{- if .Values.keycloak.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.keycloak.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.keycloak.affinity.team }}         
+      {{- end }}
+      initContainers:
+      - name: fix-the-volume-permission
+        image: busybox
+        command: ['sh', '-c', 'chmod 777 -R /opt/keycloak']
+        securityContext:
+          privileged: true
+        {{- if .Values.keycloak.volumes }}
+        {{- range $volumename , $mountpath := .Values.keycloak.volumes }}
+        volumeMounts:
+          - name: {{$volumename}}
+            mountPath: /opt/keycloak
+        {{- end }}
+        {{- end}}
+      containers:
+      - name: {{ .Values.keycloak.name }}
+        image: {{ .Values.keycloak.image }}
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.keycloak.environments }}
+        env:
+        {{- range $envname , $envvalue := .Values.keycloak.environments }}
+        - name: {{ $envname }}
+          value: {{ $envvalue }}
+        {{- end }}
+        {{- end}}
+        {{- if .Values.keycloak.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.keycloak.security.allowPrivilegeEscalation  }}
+          readOnlyRootFilesystem: {{ .Values.keycloak.security.readOnlyRootFilesystem }}
+          runAsUser: {{ .Values.keycloak.security.runAsUser }}
+          runAsGroup: {{  .Values.keycloak.security.runAsGroup }}
+          capabilities:
+            drop:
+              {{- range  .Values.keycloak.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.keycloak.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+
+        {{- if .Values.keycloak.volumes }}
+        volumeMounts:
+        {{- if .Values.keycloak.environments }}
+        {{- range $volumename, $mountpath := .Values.keycloak.volumes }}
+        - name: {{ $volumename }}
+          mountPath: {{ $mountpath.mountpath }}
+        {{- if $mountpath.subPath }}
+          subPath: {{ $mountpath.subPath }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.keycloak.env}}
+        - name: {{ .Values.keycloak.env.name }}
+          mountPath: {{ .Values.keycloak.env.path }} 
+        {{- end }}
+        {{- end }}
+        - name: tls-secret
+          mountPath: /opt/keycloak/certs
+
+        resources:
+          requests:
+            cpu: {{ .Values.keycloak.resources.requests.cpu }}
+            memory: {{ .Values.keycloak.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.keycloak.resources.limits.cpu }}
+            memory: {{ .Values.keycloak.resources.limits.memory }}
+      {{- if .Values.keycloak.volumes }}
+      volumes:
+        {{- if .Values.keycloak.volumes }}
+        {{- range $volumename , $mountpath := .Values.keycloak.volumes }}
+        - name: {{ $volumename }}
+          persistentVolumeClaim:          
+            claimName: {{ $volumename }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.keycloak.env }}
+        - name: {{ .Values.keycloak.env.name }}          
+          configMap:
+            name: {{ .Values.keycloak.env.name }}
+      {{- end }}
+      {{- end }}
+        - name: tls-secret
+          secret:
+            secretName: keycloak-tls-secret

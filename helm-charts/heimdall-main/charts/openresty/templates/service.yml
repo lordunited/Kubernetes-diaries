@@ -1,0 +1,21 @@
+{{- $namespace := .Values.openresty.namespace }}
+{{- $labels := .Values.openresty.labels }}
+{{- range $name,$config := .Values.openresty.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}
+  namespace: {{ $namespace }}
+spec:
+  selector:
+    {{- range $k1, $v1 := $labels }}
+      {{ $k1}}: {{ $v1 }}
+    {{- end }}
+  type: {{ $config.type }}
+  ports:
+  - name: {{ $config.name  }} 
+    port: {{ $config.port }}
+    targetPort: {{ $config.port }}
+    protocol: TCP
+---
+{{- end }}

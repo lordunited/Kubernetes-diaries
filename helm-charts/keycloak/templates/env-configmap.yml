@@ -1,0 +1,14 @@
+{{- if .Values.keycloak.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.keycloak.env.name }}
+  namespace: {{ .Values.keycloak.namespace }} 
+data:
+{{- if .Values.keycloak.env.value}} 
+  {{ .Values.keycloak.env.path }}: |
+    {{- range $envname, $envvalue := .Values.keycloak.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 

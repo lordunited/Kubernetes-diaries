@@ -1,0 +1,76 @@
+keycloak: 
+  affinity:
+    enabled: false
+    team: devops
+    node: stage
+  toleration: stage   #prodcution or stage
+  strategy:
+    enabled: true
+    type: RollingUpdate
+    maxsurge: 0
+    maxunavailble: 1
+  name: keycloak
+  image: yourrepo/keycloak:mssql-26.0.0-ssl
+  args:
+  - start
+  - "--proxy-address-forwarding"
+  - "--hostname-url=https://cloak.local"
+  - "--hostname-admin-url=https://cloak.local/admin"
+  - "--https-key-store-file=/opt/keycloak/certs/keycloak.p12"
+  - "--https-key-store-password=123"
+  labels:
+    app: keycloak
+    team: devops
+    env: prod
+  namespace: keycloak-devops #if your deplyoing on stage , set yournamespace-stage
+  environments:
+    TZ: "Asia/Tehran" #its a neccessary env , dont ommit it
+    KEYCLOAK_ADMIN: "admin"
+    KEYCLOAK_ADMIN_PASSWORD: "admin"
+    KC_DB: "mssql"
+    KC_DB_URL: "jdbc:sqlserver://#IP_SQL_SERVER;databaseName=keycloak;encrypt=false;trustServerCertificate=false;loginTimeout=30"
+    KC_DB_USERNAME: "keycloak"
+    KC_DB_PASSWORD: "keycloak"
+    KC_PROXY: "passthrough"
+    KC_HOSTNAME_URL: "https://cloak.local"
+    KC_HOSTNAME_ADMIN_URL: "https://cloak.local/admin"
+  security:
+    enabled: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
+    runAsGroup: 1001
+    capabilities:
+      drop: 
+        - ALL
+      allow:
+        - NET_BIND_SERVICE
+        - SYS_NICE
+        - SETUID
+        - SETGID
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "128Mi"
+    limits:
+      cpu: "2" 
+      memory: "4048Mi" 
+  storageclass: longhorn-main
+  env: {}
+  volumes:  #open template/pvc and add a section for each of volume definition below.
+    keycloak-data-volume: 
+      mountpath: /opt/keycloak/data
+      storage: 30Gi
+  services: #you have to add your second config in template/service.yml
+    keycloak:
+      name: keycloak
+      type: ClusterIP
+      port: "8443"
+      targetport: 8443
+  ingress: 
+    domain:
+      name: keycloak
+      service: keycloak
+      port: 8443
+      host: cloak.local

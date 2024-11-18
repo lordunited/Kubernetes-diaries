@@ -1,0 +1,134 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.openresty.name }}
+  namespace: {{ .Values.openresty.namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.openresty.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.openresty.replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.openresty.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      {{- if .Values.openresty.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.openresty.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.openresty.affinity.team }}         
+      {{- end }}
+      securityContext:
+          fsGroup: 1000
+      containers:
+      - name: {{ .Values.openresty.name }}
+        image: {{ .Values.openresty.image }}
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.openresty.environments }}
+        env:
+        {{- range $envname , $envvalue := .Values.openresty.environments }}
+        - name: {{ $envname }}
+          value: {{ $envvalue }}
+        {{- end }}
+        {{- end}}
+        {{- if .Values.openresty.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.openresty.security.allowPrivilegeEscalation  }}
+          readOnlyRootFilesystem: {{ .Values.openresty.security.readOnlyRootFilesystem }}
+          runAsUser: {{ .Values.openresty.security.runAsUser }}
+          runAsGroup: {{  .Values.openresty.security.runAsGroup }}
+          capabilities:
+            drop:
+              {{- range  .Values.openresty.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.openresty.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf/nginx.conf
+        {{- if .Values.openresty.volumes }}
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /usr/local/openresty/nginx/conf
+        {{- if .Values.openresty.environments }}
+        {{- range $volumename, $mountpath := .Values.openresty.volumes }}
+        - name: {{ $volumename }}
+          mountPath: {{ $mountpath.mountpath }}
+        {{- if $mountpath.subPath }}
+          subPath: {{ $mountpath.subPath }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.openresty.env}}
+        - name: {{ .Values.openresty.env.name }}
+          mountPath: {{ .Values.openresty.env.path }} 
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            cpu: {{ .Values.openresty.resources.requests.cpu }}
+            memory: {{ .Values.openresty.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.openresty.resources.limits.cpu }}
+            memory: {{ .Values.openresty.resources.limits.memory }}
+      volumes:
+        - name: nginx-config
+          configMap: 
+            name: nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+      {{- if .Values.openresty.volumes }}
+      volumes:
+        - name: nginx-config
+          configMap: 
+            name: nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+        {{- if .Values.openresty.volumes }}
+        {{- range $volumename , $mountpath := .Values.openresty.volumes }}
+        - name: {{ $volumename }}
+          persistentVolumeClaim:          
+            claimName: {{ $volumename }}
+        {{- end }}
+        {{- end }}
+        - name: sonar-config
+          configMap: 
+            name: sonar-config
+        {{- if .Values.openresty.env }}
+        - name: {{ .Values.openresty.env.name }}          
+          configMap:
+            name: {{ .Values.openresty.env.name }}
+      {{- end }}
+      {{- end }}
+      {{ if .Values.openresty.imagepullsecret.enabled }}
+      tolerations:
+      - effect: NoSchedule
+        key: {{ .Values.openresty.toleration }}
+        operator: Equal
+        value: enabled

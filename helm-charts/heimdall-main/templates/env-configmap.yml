@@ -1,0 +1,14 @@
+{{- if .Values.heimdall.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.heimdall.env.name }}
+  namespace: {{ .Values.heimdall.namespace }} 
+data:
+{{- if .Values.heimdall.env.value}} 
+  {{ .Values.heimdall.env.path }}: |
+    {{- range $envname, $envvalue := .Values.heimdall.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 

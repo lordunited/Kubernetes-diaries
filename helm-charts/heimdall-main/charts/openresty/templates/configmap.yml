@@ -1,0 +1,56 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-config
+  namespace: heimdall
+data:
+  nginx.conf: |
+
+     #access_log /var/log/nginx/access.log
+     events {
+         worker_connections 1024;
+     }
+     
+     http {
+         lua_shared_dict discovery 1m;
+         lua_shared_dict jwks 1m;
+     
+         # Enable lua-resty-openidc in Nginx
+         server {
+             listen 80;
+             server_name _;
+     
+             # OIDC authentication
+             location / {
+                 access_by_lua_block {
+                     local opts = {
+                         discovery = "https://cloak.local/realms/master/.well-known/openid-configuration",
+                         client_id = "nginx-app",
+                         client_secret = "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJkZjBkYjJlNi0xYjRiLTQ2NmYtYTNlMS1lOWYxZDRjNGYwZjkifQ",
+                         redirect_uri = "heimdall.local",
+                     }
+     
+                     local res, err = require("resty.openidc").authenticate(opts)
+     
+                     if err then
+                         ngx.status = 403
+                         ngx.say(err)
+                         ngx.exit(ngx.HTTP_FORBIDDEN)
+                     end
+     
+                     ngx.var.user = res.id_token.sub
+                 }
+     
+                 proxy_pass http://keycloak-headless;
+             }
+     
+             # Callback URL for the OIDC flow
+             location /callback {
+                 access_by_lua_block {
+                     require("resty.openidc").authenticate()
+                 }
+             }
+         }
+     
+     }
+     

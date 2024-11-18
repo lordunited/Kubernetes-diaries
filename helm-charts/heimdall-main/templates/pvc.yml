@@ -1,0 +1,16 @@
+{{- $namespace := .Values.heimdall.namespace }}
+{{- range $name,$config := .Values.heimdall.volumes }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec: 
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-main
+  resources:
+    requests:
+      storage: {{ $config.storage }}
+---
+{{- end }}

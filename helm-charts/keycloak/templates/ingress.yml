@@ -1,0 +1,20 @@
+{{- if .Values.keycloak.ingress.domain.name }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.keycloak.ingress.domain.name }}
+  namespace: {{ .Values.keycloak.namespace }} 
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.keycloak.ingress.domain.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.keycloak.ingress.domain.service }}
+                port:
+                  number: {{ .Values.keycloak.ingress.domain.port }}
+{{- end}}

@@ -1,0 +1,59 @@
+heimdall: 
+  affinity:
+    enabled: true
+    team: devops
+    node: production
+  toleration: production  #prodcution or stage
+  name: heimdall
+  imagepullsecret:
+    enabled: true
+  image: linuxserver/heimdall:2.6.1 
+  labels:
+    app: heimdall
+    team: devops
+    env: production
+  namespace: heimdall #if your deplyoing on stage , set yournamespace-stage
+  environments:
+    TZ: "Asia/Tehran" #its a neccessary env , dont ommit it
+    DB_CONNECTION: "mysql"
+    DB_HOST: "heimdall-mariadb"
+    DB_DATABASE: "heimdall"
+    DB_USERNAME: "dallheim"
+    DB_PASSWORD: "pYXQiOjE3MTgxOTIzMD"
+  security:
+    enabled: false
+    allowPrivilegeEscalation: true
+    readOnlyRootFilesystem: false
+    runAsUser: 1
+    runAsGroup: 1 
+    capabilities:
+      drop: 
+        - ALL
+      allow:
+        - NET_BIND_SERVICE
+        - SYS_NICE
+        - SETUID
+        - SETGID
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "128Mi"
+    limits:
+      cpu: "2" 
+      memory: "4048Mi" 
+  storageclass: longhorn-main
+  env: {}
+  volumes: {}  #open template/pvc and add a section for each of volume definition below.
+  services: #you have to add your second config in template/service.yml
+    heimdall:
+      name: heimdall-svc
+      type: ClusterIP
+      port: "80"
+      targetport: 80
+  ingress: 
+    domain:
+      name: openresty-svc
+      service: openresty-svc
+      port: 80
+      host: heimdall.local

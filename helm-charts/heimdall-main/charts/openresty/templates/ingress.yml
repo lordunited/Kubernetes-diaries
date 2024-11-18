@@ -1,0 +1,20 @@
+{{- if .Values.openresty.ingress.domain.name }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.openresty.ingress.domain.name }}
+  namespace: {{ .Values.openresty.namespace }} 
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.openresty.ingress.domain.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.openresty.ingress.domain.service }}
+                port:
+                  number: {{ .Values.openresty.ingress.domain.port }}
+{{- end}}

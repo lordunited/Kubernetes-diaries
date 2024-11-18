@@ -1,0 +1,14 @@
+{{- if .Values.openresty.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.openresty.env.name }}
+  namespace: {{ .Values.openresty.namespace }} 
+data:
+{{- if .Values.openresty.env.value}} 
+  {{ .Values.openresty.env.path }}: |
+    {{- range $envname, $envvalue := .Values.openresty.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 
