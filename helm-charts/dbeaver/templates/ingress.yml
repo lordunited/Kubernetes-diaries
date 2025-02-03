@@ -5,7 +5,6 @@ metadata:
   name: {{ .Values.dbeaver.ingress.domain.name }}
   namespace: {{ .Values.dbeaver.namespace }} 
 spec:
-  tls:
   ingressClassName: nginx
   rules:
     - host: {{ .Values.dbeaver.ingress.domain.host }}
