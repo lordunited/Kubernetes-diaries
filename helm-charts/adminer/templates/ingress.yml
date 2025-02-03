@@ -1,0 +1,20 @@
+{{- if .Values.adminer.ingress.domain.name }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.adminer.ingress.domain.name }}
+  namespace: {{ .Values.adminer.namespace }} 
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.adminer.ingress.domain.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.adminer.ingress.domain.service }}
+                port:
+                  number: {{ .Values.adminer.ingress.domain.port }}
+{{- end}}

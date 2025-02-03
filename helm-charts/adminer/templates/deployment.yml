@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.adminer.name }}
+  namespace: {{ .Values.adminer.namespace }}
+spec:
+  {{ if .Values.adminer.strategy.enabled }} 
+  strategy: 
+    type: {{ .Values.adminer.strategy.type }}
+    rollingUpdate: 
+      maxSurge: {{ .Values.adminer.strategy.maxsurge }}
+      maxUnavailable: {{ .Values.adminer.strategy.maxunavailble }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.adminer.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.adminer.replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.adminer.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      {{- if .Values.adminer.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.adminer.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.adminer.affinity.team }}         
+      {{- end }}
+      containers:
+      - name: {{ .Values.adminer.name }}
+        image: {{ .Values.adminer.image }}
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.adminer.environments }}
+        env:
+        {{- range $envname , $envvalue := .Values.adminer.environments }}
+        - name: {{ $envname | toYaml  }}
+          value: {{ $envvalue | toYaml  }}
+        {{- end }}
+        {{- end}}
+        {{- if .Values.adminer.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.adminer.security.allowPrivilegeEscalation  }}
+          readOnlyRootFilesystem: {{ .Values.adminer.security.readOnlyRootFilesystem }}
+          runAsUser: {{ .Values.adminer.security.runAsUser }}
+          runAsGroup: {{  .Values.adminer.security.runAsGroup }}
+          capabilities:
+            drop:
+              {{- range  .Values.adminer.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.adminer.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+
+        resources:
+          requests:
+            cpu: {{ .Values.adminer.resources.requests.cpu }}
+            memory: {{ .Values.adminer.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.adminer.resources.limits.cpu }}
+            memory: {{ .Values.adminer.resources.limits.memory }}
+      {{- if .Values.adminer.toleration.enabled }}
+      tolerations:
+      - effect: NoSchedule
+        key: {{ .Values.adminer.toleration.key }}
+        operator: Equal
+        value: enabled
+      {{- end }}

@@ -1,0 +1,14 @@
+{{- if .Values.adminer.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.adminer.env.name }}
+  namespace: {{ .Values.adminer.namespace }} 
+data:
+{{- if .Values.adminer.env.value}} 
+  {{ .Values.adminer.env.path }}: |
+    {{- range $envname, $envvalue := .Values.adminer.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 

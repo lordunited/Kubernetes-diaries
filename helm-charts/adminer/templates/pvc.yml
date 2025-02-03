@@ -1,0 +1,17 @@
+{{- $storageclass := .Values.adminer.storageclass }}
+{{- $namespace := .Values.adminer.namespace }}
+{{- range $name,$config := .Values.adminer.volumes }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec: 
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ $storageclass }}
+  resources:
+    requests:
+      storage: {{ $config.storage }}
+---
+{{- end }}
