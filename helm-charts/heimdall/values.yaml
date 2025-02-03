@@ -1,16 +1,16 @@
 heimdall: 
   affinity:
-    enabled: true
-    team: devops
+    enabled: false
     node: production
-  toleration: production  #prodcution or stage
+  toleration: 
+    enabled: true
+    key: production  #prodcution or stage
   name: heimdall
   imagepullsecret:
     enabled: true
   image: linuxserver/heimdall:2.6.1 
   labels:
     app: heimdall
-    team: devops
     env: production
   namespace: heimdall #if your deplyoing on stage , set yournamespace-stage
   environments:
@@ -18,8 +18,8 @@ heimdall:
     DB_CONNECTION: "mysql"
     DB_HOST: "heimdall-mariadb"
     DB_DATABASE: "heimdall"
-    DB_USERNAME: "dallheim"
-    DB_PASSWORD: "pYXQiOjE3MTgxOTIzMD"
+    DB_USERNAME: "mysql"
+    DB_PASSWORD: "pass"
   security:
     enabled: false
     allowPrivilegeEscalation: true
@@ -42,7 +42,7 @@ heimdall:
     limits:
       cpu: "2" 
       memory: "4048Mi" 
-  storageclass: longhorn-main
+  storageclass: yourstorageclass
   env: {}
   volumes: {}  #open template/pvc and add a section for each of volume definition below.
   services: #you have to add your second config in template/service.yml

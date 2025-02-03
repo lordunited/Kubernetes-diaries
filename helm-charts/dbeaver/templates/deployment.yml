@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.dbeaver.name }}
+  namespace: {{ .Values.dbeaver.namespace }}
+spec:
+  {{ if .Values.dbeaver.strategy.enabled }} 
+  strategy: 
+    type: {{ .Values.dbeaver.strategy.type }}
+    rollingUpdate: 
+      maxSurge: {{ .Values.dbeaver.strategy.maxsurge }}
+      maxUnavailable: {{ .Values.dbeaver.strategy.maxunavailble }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- range $k1, $v1 := .Values.dbeaver.labels }}
+         {{ $k1 }}: {{ $v1 }}
+      {{- end }}
+  replicas: {{ .Values.dbeaver.replicaCount }} 
+  template:
+    metadata:
+      labels:
+        {{- range $k1, $v1 := .Values.dbeaver.labels }}
+          {{ $k1 }}: {{ $v1 }}
+        {{- end }}
+    spec:
+      {{- if .Values.dbeaver.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node
+                operator: In
+                values:
+                - {{ .Values.dbeaver.affinity.node }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: team
+                operator: In
+                values:
+                - {{ .Values.dbeaver.affinity.team }}         
+      {{- end }}
+      containers:
+      - name: {{ .Values.dbeaver.name }}
+        image: {{ .Values.dbeaver.image }}
+        imagePullPolicy: IfNotPresent
+        {{- if .Values.dbeaver.environments }}
+        env:
+        {{- range $envname , $envvalue := .Values.dbeaver.environments }}
+        - name: {{ $envname | toYaml  }}
+          value: {{ $envvalue | toYaml  }}
+        {{- end }}
+        {{- end}}
+        {{- if .Values.dbeaver.security.enabled }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.dbeaver.security.allowPrivilegeEscalation  }}
+          readOnlyRootFilesystem: {{ .Values.dbeaver.security.readOnlyRootFilesystem }}
+          runAsUser: {{ .Values.dbeaver.security.runAsUser }}
+          runAsGroup: {{  .Values.dbeaver.security.runAsGroup }}
+          capabilities:
+            drop:
+              {{- range  .Values.dbeaver.security.capabilities.drop }} 
+              - {{ . }}
+              {{- end }} 
+            add:
+              {{- range  .Values.dbeaver.security.capabilities.allow }} 
+              - {{ . }}
+              {{- end }} 
+        {{- end }}
+        volumeMounts:
+        - name: cloudbeaver
+          mountPath: /opt/cloudbeaver/workspace
+          subPath: workspace
+
+        resources:
+          requests:
+            cpu: {{ .Values.dbeaver.resources.requests.cpu }}
+            memory: {{ .Values.dbeaver.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.dbeaver.resources.limits.cpu }}
+            memory: {{ .Values.dbeaver.resources.limits.memory }}
+      volumes: 
+        - name: cloudbeaver
+          persistentVolumeClaim:
+            claimName: cloudbeaver
+      tolerations:
+      - effect: NoSchedule
+        key: {{ .Values.dbeaver.toleration }}
+        operator: Equal
+        value: enabled

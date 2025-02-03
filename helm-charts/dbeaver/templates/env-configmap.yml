@@ -1,0 +1,14 @@
+{{- if .Values.dbeaver.env}} 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.dbeaver.env.name }}
+  namespace: {{ .Values.dbeaver.namespace }} 
+data:
+{{- if .Values.dbeaver.env.value}} 
+  {{ .Values.dbeaver.env.path }}: |
+    {{- range $envname, $envvalue := .Values.dbeaver.env.value }}
+      {{$envname}}: {{$envvalue}}
+    {{- end}} 
+{{- end}} 
+{{- end}} 

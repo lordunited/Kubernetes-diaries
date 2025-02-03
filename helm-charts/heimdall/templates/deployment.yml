@@ -112,8 +112,10 @@ spec:
       imagePullSecrets:
         - name: your secret for private
       {{- end}}
+      {{ if .Values.heimdall.toleration.enabled }}
       tolerations:
       - effect: NoSchedule
-        key: {{ .Values.heimdall.toleration }}
+        key: {{ .Values.heimdall.toleration.key }}
         operator: Equal
         value: enabled
+      {{- end}}

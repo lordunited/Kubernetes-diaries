@@ -1,0 +1,21 @@
+{{- if .Values.dbeaver.ingress.domain.name }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.dbeaver.ingress.domain.name }}
+  namespace: {{ .Values.dbeaver.namespace }} 
+spec:
+  tls:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.dbeaver.ingress.domain.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.dbeaver.ingress.domain.service }}
+                port:
+                  number: {{ .Values.dbeaver.ingress.domain.port }}
+{{- end}}

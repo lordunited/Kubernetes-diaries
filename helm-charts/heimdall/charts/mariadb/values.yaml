@@ -18,8 +18,8 @@ global:
 #  imagePullSecrets:
 #  -
   ##
-  defaultStorageClass: "longhorn-main"
-  storageClass: "longhorn-main"
+  defaultStorageClass: "yourstorageclass"
+  storageClass: "yourstorageclass"
 #  ## Compatibility adaptations for Kubernetes platforms
 #  ##
   compatibility:
@@ -123,7 +123,7 @@ auth:
   ## @param auth.rootPassword Password for the `root` user. Ignored if existing secret is provided.
   ## ref: https://github.com/bitnami/containers/tree/main/bitnami/mariadb#setting-the-root-password-on-first-run
   ##
-  rootPassword: "pYXQiOjE3MTgxOTIzMD"
+  rootPassword: "pass"
   ## @param auth.database Name for a custom database to create
   ## ref: https://github.com/bitnami/containers/blob/main/bitnami/mariadb/README.md#creating-a-database-on-first-run
   ##
@@ -131,10 +131,10 @@ auth:
   ## @param auth.username Name for a custom user to create
   ## ref: https://github.com/bitnami/containers/blob/main/bitnami/mariadb/README.md#creating-a-database-user-on-first-run
   ##
-  username: "dallheim"
+  username: "mysql"
   ## @param auth.password Password for the new user. Ignored if existing secret is provided
   ##
-  password: "pYXQiOjE3MTgxOTIzMD"
+  password: "pass"
   ## @param auth.replicationUser MariaDB replication user
   ## ref: https://github.com/bitnami/containers/tree/main/bitnami/mariadb#setting-up-a-replication-cluster
   ##
